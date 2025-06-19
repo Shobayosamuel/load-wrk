@@ -4,6 +4,7 @@ import (
     "net/http"
     "sync"
     "time"
+	"github.com/Shobayosamuel/load-wrk/internal/metrics"
 )
 
 type Result struct {
@@ -32,11 +33,13 @@ func StartWorkers(targetURL string, method string, totalRequests int, concurrenc
 
                 resp, err := client.Do(req)
                 duration := time.Since(start)
-
+				metrics.RequestsTotal.Inc()
                 if err != nil {
                     resultChan <- Result{StatusCode: 0, Duration: duration, Error: err}
                     continue
                 }
+				metrics.RequestsSuccess.Inc()
+				metrics.LatencyHistogram.Observe(duration.Seconds())
                 resp.Body.Close()
                 resultChan <- Result{StatusCode: resp.StatusCode, Duration: duration}
             }

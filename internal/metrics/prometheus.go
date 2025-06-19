@@ -9,17 +9,17 @@ import (
 
 var (
     RequestsTotal = prometheus.NewCounter(prometheus.CounterOpts{
-        Name: "loadtester_requests_total",
+        Name: "loadwrk_requests_total",
         Help: "Total number of HTTP requests",
     })
 
     RequestsSuccess = prometheus.NewCounter(prometheus.CounterOpts{
-        Name: "loadtester_requests_successful",
+        Name: "loadwrk_requests_successful",
         Help: "Total number of successful HTTP requests",
     })
 
     LatencyHistogram = prometheus.NewHistogram(prometheus.HistogramOpts{
-        Name:    "loadtester_latency_seconds",
+        Name:    "loadwrk_latency_seconds",
         Help:    "Histogram of response latencies",
         Buckets: prometheus.DefBuckets,
     })
