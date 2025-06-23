@@ -4,7 +4,8 @@ import (
     "net/http"
     "sync"
     "time"
-	"github.com/Shobayosamuel/load-wrk/internal/metrics"
+    "strings"
+    "github.com/Shobayosamuel/load-wrk/internal/metrics"
 )
 
 type Result struct {
@@ -13,7 +14,7 @@ type Result struct {
     Error      error
 }
 
-func StartWorkers(targetURL string, method string, totalRequests int, concurrency int) []Result {
+func StartWorkers(targetURL string, method string, totalRequests int, concurrency int, rate int, body string, headers []string) []Result {
     jobs := make(chan int, totalRequests)
     results := make([]Result, 0, totalRequests)
     resultChan := make(chan Result, totalRequests)
@@ -29,7 +30,13 @@ func StartWorkers(targetURL string, method string, totalRequests int, concurrenc
 
             for range jobs {
                 start := time.Now()
-                req, _ := http.NewRequest(method, targetURL, nil)
+                req, _ := http.NewRequest(method, targetURL, strings.NewReader(body))
+                for _, h := range headers {
+                    parts := strings.SplitN(h, ":", 2)
+                    if len(parts) == 2 {
+                        req.Header.Set(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
+                    }
+                }
 
                 resp, err := client.Do(req)
                 duration := time.Since(start)
@@ -47,8 +54,17 @@ func StartWorkers(targetURL string, method string, totalRequests int, concurrenc
     }
 
     // Send jobs
-    for i := 0; i < totalRequests; i++ {
-        jobs <- i
+    if rate > 0 {
+        ticker := time.NewTicker(time.Second / time.Duration(rate))
+        for i := 0; i < totalRequests; i++ {
+            <-ticker.C
+            jobs <- i
+        }
+        ticker.Stop()
+    } else {
+        for i := 0; i < totalRequests; i++ {
+            jobs <- i
+        }
     }
     close(jobs)
 
